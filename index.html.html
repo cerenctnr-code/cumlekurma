@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cümle Kurma Oyunu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .word-btn { transition: all 0.2s; }
+        .word-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 font-sans text-slate-800">
+    <div id="game-container" class="bg-white rounded-2xl shadow-xl p-6 md:p-8 max-w-2xl w-full border border-slate-100">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-xl md:text-2xl font-bold text-indigo-600">Cümle Kurma Alıştırması</h1>
+            <span id="progress" class="text-sm font-semibold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full">Soru: 1/10</span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2 mb-6">
+            <div id="progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 10%"></div>
+        </div>
+        <div id="play-area">
+            <p class="text-slate-500 text-sm mb-3 italic">Kelimelerin üzerine tıklayarak doğru sırada diziniz:</p>
+            <div id="target-area" class="min-h-[120px] border-2 border-dashed border-indigo-200 rounded-xl p-4 mb-4 flex flex-wrap gap-2 items-center bg-indigo-50/30 transition-colors"></div>
+            <div id="source-area" class="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-xl border border-slate-100 min-h-[80px] mb-6"></div>
+            <div class="flex gap-3">
+                <button id="check-btn" class="flex-grow bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition shadow-sm disabled:opacity-50">Kontrol Et</button>
+                <button id="reset-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-3 px-5 rounded-xl transition">Sıfırla</button>
+            </div>
+        </div>
+        <div id="feedback" class="mt-4 p-3 rounded-xl text-center font-medium hidden"></div>
+        <div id="final-screen" class="hidden text-center py-6">
+            <div class="text-5xl mb-4">🎉</div>
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">Tebrikler, Tamamladınız!</h2>
+            <p class="text-slate-600 mb-6">Metne ait tüm cümleleri başarıyla doğru sıraya koydunuz.</p>
+            <button onclick="location.reload()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition">Tekrar Oyna</button>
+        </div>
+    </div>
+    <script>
+        const sentences = [
+            "Merhaba, benim adım Can.",
+            "Otuz yaşındayım ve İzmir’de yaşıyorum.",
+            "Bir şirkette bilgisayar mühendisi olarak çalışıyorum.",
+            "Genellikle hafta içi sabahları erken kalkarım.",
+            "İşime saat dokuzda başlarım.",
+            "Gün boyu çok yoğun olurum ama işimi çok seviyorum.",
+            "İstanbul'dan eski bir arkadaşım beni ziyarete geldi.",
+            "Cumartesi günü onu gezdirmek için şehre çıktık.",
+            "Hava biraz rüzgarlıydı ama yine de çok keyifliydi.",
+            "Antalya’ya gidip deniz kenarında biraz dinlenmek istiyorum."
+        ];
+        let currentIndex = 0;
+        let userSentence = [];
+        const targetArea = document.getElementById('target-area');
+        const sourceArea = document.getElementById('source-area');
+        const checkBtn = document.getElementById('check-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const feedback = document.getElementById('feedback');
+        const progressText = document.getElementById('progress');
+        const progressBar = document.getElementById('progress-bar');
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+        function initLevel() {
+            const currentStr = sentences[currentIndex];
+            const words = currentStr.split(' ');
+            let scrambled = [...words];
+            while (scrambled.join(' ') === currentStr && words.length > 1) {
+                scrambled = shuffle(scrambled);
+            }
+            targetArea.innerHTML = '';
+            sourceArea.innerHTML = '';
+            userSentence = [];
+            feedback.className = "hidden";
+            checkBtn.innerText = "Kontrol Et";
+            checkBtn.className = "flex-grow bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition shadow-sm";
+            checkBtn.onclick = checkAnswer;
+            scrambled.forEach((word) => {
+                const btn = document.createElement('button');
+                btn.innerText = word;
+                btn.className = "word-btn bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:border-indigo-500 hover:text-indigo-600 font-medium shadow-sm bg-gradient-to-b from-white to-slate-50";
+                btn.onclick = () => moveToTarget(btn, word);
+                sourceArea.appendChild(btn);
+            });
+            progressText.innerText = `Soru: ${currentIndex + 1}/${sentences.length}`;
+            progressBar.style.width = `${((currentIndex + 1) / sentences.length) * 100}%`;
+        }
+        function moveToTarget(btn, word) {
+            userSentence.push(word);
+            const targetBtn = document.createElement('button');
+            targetBtn.innerText = word;
+            targetBtn.className = "word-btn bg-indigo-600 text-white px-3 py-2 rounded-lg shadow-sm font-medium hover:bg-indigo-700";
+            targetBtn.onclick = () => moveToSource(targetBtn, word);
+            targetArea.appendChild(targetBtn);
+            btn.style.display = 'none';
+        }
+        function moveToSource(btn, word) {
+            const index = userSentence.lastIndexOf(word);
+            if (index > -1) userSentence.splice(index, 1);
+            const sourceBtns = sourceArea.querySelectorAll('button');
+            for (let sBtn of sourceBtns) {
+                if (sBtn.innerText === word && sBtn.style.display === 'none') {
+                    sBtn.style.display = 'inline-block';
+                    break;
+                }
+            }
+            btn.remove();
+        }
+        function checkAnswer() {
+            const result = userSentence.join(' ');
+            const original = sentences[currentIndex];
+            if (result === original) {
+                feedback.innerText = "Harika! Doğru cevap.";
+                feedback.className = "mt-4 p-3 rounded-xl text-center font-medium bg-emerald-50 text-emerald-700 block";
+                checkBtn.innerText = "Sonraki Cümle";
+                checkBtn.className = "flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition shadow-sm";
+                checkBtn.onclick = nextLevel;
+            } else {
+                feedback.innerText = "Henüz doğru değil, kelime sıralamasını tekrar kontrol edin!";
+                feedback.className = "mt-4 p-3 rounded-xl text-center font-medium bg-rose-50 text-rose-700 block";
+            }
+        }
+        function nextLevel() {
+            currentIndex++;
+            if (currentIndex < sentences.length) {
+                initLevel();
+            } else {
+                document.getElementById('play-area').classList.add('hidden');
+                document.getElementById('final-screen').classList.remove('hidden');
+                progressText.innerText = "Tamamlandı!";
+                progressBar.style.width = "100%";
+            }
+        }
+        resetBtn.onclick = () => initLevel();
+        initLevel();
+    </script>
+</body>
+</html>
